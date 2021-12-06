@@ -1,0 +1,84 @@
+version: "3"
+services:
+    micro-nginx:
+        build:
+            context: ./.docker/dev
+            dockerfile: nginx.docker
+        container_name: micro-nginx
+        volumes:
+            - "$PWD/app:/var/www/app:rw"
+        environment:
+            VIRTUAL_HOST: "plat.click"
+            PHP_IDE_CONFIG: "serverName=Docker"
+        depends_on:
+            - micro-php-fpm
+        ports:
+            - 8091:80
+        networks:
+            - micro-network
+    micro-php-fpm:
+        build:
+            context: ./.docker/dev
+            dockerfile: php-fpm.docker
+        container_name: micro-php-fpm
+        volumes:
+            - "$PWD/app:/var/www/app:rw"
+        environment:
+            XDEBUG_CONFIG: "remote_host=192.168.221.1 remote_enable=1"
+            PHP_IDE_CONFIG: "serverName=Docker"
+        depends_on:
+            - micro-mysql
+        networks:
+            - micro-network
+    micro-php-cli:
+        build:
+            context: ./.docker/dev
+            dockerfile: php-cli.docker
+        container_name: micro-php-cli
+        volumes:
+            - "$PWD/app:/var/www/app:rw"
+            - "$PWD/.data/composer:/root/.composer/cache"
+        environment:
+            XDEBUG_CONFIG: "remote_host=192.168.221.1 remote_enable=1"
+            PHP_IDE_CONFIG: "serverName=Docker"
+        depends_on:
+            - micro-mysql
+        networks:
+            - micro-network
+    micro-mysql:
+        image: mysql:8
+        container_name: micro-mysql
+        volumes:
+            - "$PWD/.data/db/mysql8:/var/lib/mysql"
+        environment:
+            MYSQL_ROOT_PASSWORD: root
+            MYSQL_USER: user
+            MYSQL_PASSWORD: password
+            MYSQL_DATABASE: db
+        ports:
+            - 33081:3306
+        networks:
+            - micro-network
+
+    micro-storage-ftp:
+        container_name: micro-storage-ftp
+        image: stilliard/pure-ftpd
+        environment:
+            FTP_USER_NAME: user
+            FTP_USER_PASS: password
+            FTP_USER_HOME: /app
+        volumes:
+            - ./storage/public:/app
+        networks:
+            - micro-network
+    micro-mailer:
+      container_name: micro-mailer
+      image: mailhog/mailhog
+      ports:
+        - 8029:8025
+      networks:
+        - micro-network
+
+networks:
+    micro-network:
+        external: true

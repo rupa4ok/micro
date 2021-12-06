@@ -1,0 +1,27 @@
+FROM php:8.0.2-fpm
+
+RUN apt-get update \
+    && apt-get install -y \
+        librabbitmq-dev \
+        libssh-dev \
+        libzip-dev \
+        unzip \
+        wget \
+    && docker-php-ext-install \
+        bcmath \
+        sockets \
+        pdo_mysql \
+        pcntl \
+        zip
+
+RUN wget https://raw.githubusercontent.com/mlocati/docker-php-extension-installer/master/install-php-extensions \
+    && chmod u+x ./install-php-extensions \
+    && ./install-php-extensions xdebug redis amqp
+
+COPY ./php/fpm/default.ini /usr/local/etc/php/conf.d/default.ini
+
+COPY ./php/fpm/xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
+
+RUN apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
+
+WORKDIR /var/www/app
